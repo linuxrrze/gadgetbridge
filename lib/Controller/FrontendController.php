@@ -27,6 +27,7 @@ use OCP\Files\IRootFolder;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCP\Util;
 
 class FrontendController extends Controller {
 
@@ -37,9 +38,11 @@ class FrontendController extends Controller {
 	/** @var IConfig */
 	protected $config;
 
+	protected $appName;
 	public function __construct($appName, IRequest $request, IUserSession $userSession, IRootFolder $rootFolder, IConfig $config) {
 		parent::__construct($appName, $request);
 
+		$this->appName = $appName;
 		$this->userSession = $userSession;
 		$this->rootFolder = $rootFolder;
 		$this->config = $config;
@@ -52,6 +55,8 @@ class FrontendController extends Controller {
 	 * @return TemplateResponse
 	 */
 	public function show() {
+		Util::addScript($this->appName, 'gadgetbridge');
+		Util::addStyle($this->appName, 'gadgetbridge');
 		$user = $this->userSession->getUser();
 		$databaseId = (int) $this->config->getUserValue($user->getUID(), 'gadgetbridge', 'database_file', 0);
 		$databasePath = '';
@@ -69,7 +74,7 @@ class FrontendController extends Controller {
 			}
 		}
 
-		return new TemplateResponse('gadgetbridge', 'index', [
+		return new TemplateResponse($this->appName, 'index', [
 			'databaseId' => $databaseId,
 			'databasePath' => $databasePath,
 		]);

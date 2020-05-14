@@ -68,6 +68,7 @@ class ApiController extends OCSController {
 
 	/**
 	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 *
 	 * @param string $path
 	 * @return DataResponse

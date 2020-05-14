@@ -20,15 +20,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-style('gadgetbridge', 'gadgetbridge');
-script('gadgetbridge', 'gadgetbridge');
-script('gadgetbridge', 'Chart');
+// style('gadgetbridge', 'gadgetbridge');
+// script('gadgetbridge', 'gadgetbridge');
+// script('gadgetbridge', 'Chart');
 
 /** @var $l \OCP\IL10N */
 /** @var $_ array */
 ?>
-
-<div id="app-navigation">
+<div id="content">
+<Gadgetbridge db-path=<?php p($_['databasePath']);?>>
+</Gadgetbridge>
+</div>
+<!-- <div id="app-navigation">
 	<ul>
 		<li class="open-database">
 			<a id="import-data" href="#">
@@ -53,4 +56,4 @@ script('gadgetbridge', 'Chart');
 	</div>
 
 	<div id="" class="hidden FIXME icon-loading"></div>
-</div>
+</div> -->

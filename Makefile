@@ -1,51 +1,52 @@
-app_name=gadgetbridge
 
-project_dir=$(CURDIR)/../$(app_name)
-build_dir=$(CURDIR)/build/artifacts
-appstore_dir=$(build_dir)/appstore
-source_dir=$(build_dir)/source
-sign_dir=$(build_dir)/sign
-package_name=$(app_name)
-cert_dir=$(HOME)/.nextcloud/certificates
-version+=1.0.0
+all: dev-setup lint build-js-production test
 
-all: appstore
+# Dev env management
+dev-setup: clean clean-dev npm-init
 
-release: appstore create-tag
+npm-init:
+	yarn ci
 
-create-tag:
-	git tag -s -a v$(version) -m "Tagging the $(version) release."
-	git push origin v$(version)
+npm-update:
+	yarn update
 
+# Building
+build-js:
+	yarn run dev
+
+build-js-production:
+	yarn run build
+
+watch-js:
+	yarn run watch
+
+# Testing
+test:
+	yarn run test
+
+test-watch:
+	yarn run test:watch
+
+test-coverage:
+	yarn run test:coverage
+
+# Linting
+lint:
+	yarn run lint
+
+lint-fix:
+	yarn run lint:fix
+
+# Style linting
+stylelint:
+	yarn run stylelint
+
+stylelint-fix:
+	yarn run stylelint:fix
+
+# Cleaning
 clean:
-	rm -rf $(build_dir)
-	rm -rf node_modules
+	rm -f js/*
 
-appstore: clean
-	mkdir -p $(sign_dir)
-	rsync -a \
-	--exclude=/build \
-	--exclude=/docs \
-	--exclude=/l10n/templates \
-	--exclude=/l10n/.tx \
-	--exclude=/tests \
-	--exclude=/.git \
-	--exclude=/screenshots \
-	--exclude=/.github \
-	--exclude=/l10n/l10n.pl \
-	--exclude=/CONTRIBUTING.md \
-	--exclude=/issue_template.md \
-	--exclude=/README.md \
-	--exclude=/.gitattributes \
-	--exclude=/.gitignore \
-	--exclude=/.scrutinizer.yml \
-	--exclude=/.travis.yml \
-	--exclude=/.drone.yml \
-	--exclude=/Makefile \
-	$(project_dir)/ $(sign_dir)/$(app_name)
-	tar -czf $(build_dir)/$(app_name)-$(version).tar.gz \
-		-C $(sign_dir) $(app_name)
-	@if [ -f $(cert_dir)/$(app_name).key ]; then \
-		echo "Signing package…"; \
-		openssl dgst -sha512 -sign $(cert_dir)/$(app_name).key $(build_dir)/$(app_name)-$(version).tar.gz | openssl base64; \
-	fi
+clean-dev:
+	rm -rf node_modules
