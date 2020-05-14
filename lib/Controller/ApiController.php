@@ -184,7 +184,7 @@ class ApiController extends OCSController {
 		$b = $start->getTimestamp();
 		$a = $end->getTimestamp();
 
-		if ($device['TYPE'] === '11') {
+		if ($device['TYPE'] === '14') {
 			return $this->getMiBandData($connection, $device, $start, $end);
 		}
 

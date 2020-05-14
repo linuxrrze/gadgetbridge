@@ -27,6 +27,7 @@
 /** @var $l \OCP\IL10N */
 /** @var $_ array */
 ?>
+
 <div id="content">
 <Gadgetbridge db-path="<?= p($_['databasePath']);?>" >
 </Gadgetbridge>

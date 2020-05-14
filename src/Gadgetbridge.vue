@@ -7,56 +7,29 @@
 				button-id="new-gadgetbridge-button"
 				button-class="icon-add"
 				@click="filePickDatabase" />
-			<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" :allow-collapse="devices > 0" icon="icon-folder">
-                <AppNavigationItem v-if="true" title="test"></AppNavigationItem>
-			    <template v-for="device in devices"><AppNavigationItem v-bind:key="device._id" :title="device.NAME"></AppNavigationItem></template>
+			<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
+				<AppNavigationItem title="Test" style="display:none"></AppNavigationItem> <!-- This is stupid, but makes the nesting work.  FIXME -->
+				<template v-for="device in devices">
+					<li :key="device._id" :class="{ active: (selectedDevice == device) }">
+						<a href="#" @click="selectedDevice = device">
+							<i class="fa fa-upload"></i>
+							<span>{{device.NAME}}</span> <em>{{device.IDENTIFIER}}</em>
+						</a>
+					</li>
+			    	<!-- <AppNavigationItem v-bind:key="device._id" v-bind:title="displayDeviceTitle(device)"></AppNavigationItem> -->
+				</template>
             </AppNavigationItem>
 		</AppNavigation>
 		<AppContent>
-			<span>This is the content</span>
-			<button @click="show = !show">
-				Toggle sidebar
-			</button>
+			<div id="empty-content" v-if="!this.selectedDevice">
+				<div class="icon-activity"></div>
+				<h2>No Data found</h2>
+				<p>Please Import data from android app to continue</p>
+			</div>
+			<template v-else>
+				<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
+			</template>
 		</AppContent>
-		<AppSidebar v-show="show"
-			title="eberhard-grossgasteiger-VDw-nsi5TpE-unsplash.jpg"
-			subtitle="4,3 MB, last edited 41 days ago"
-			@close="show=false">
-			<template #primary-actions>
-				<button class="primary">
-					Button 1
-				</button>
-				<input id="link-checkbox"
-					name="link-checkbox"
-					class="checkbox link-checkbox"
-					type="checkbox">
-				<label for="link-checkbox" class="link-checkbox-label">Do something</label>
-			</template>
-			<template #secondary-actions>
-				<ActionButton icon="icon-edit" @click="alert('Edit')">
-					Edit
-				</ActionButton>
-				<ActionButton icon="icon-delete" @click="alert('Delete')">
-					Delete
-				</ActionButton>
-				<ActionLink icon="icon-external" title="Link" href="https://nextcloud.com" />
-			</template>
-			<AppSidebarTab id="gadgetbridge" name="gadgetbridge" icon="icon-gadgetbridge">
-				this is the gadgetbridge tab
-			</AppSidebarTab>
-			<AppSidebarTab id="activity" name="Activity" icon="icon-activity">
-				this is the activity tab
-			</AppSidebarTab>
-			<AppSidebarTab id="comments" name="Comments" icon="icon-comment">
-				this is the comments tab
-			</AppSidebarTab>
-			<AppSidebarTab id="sharing" name="Sharing" icon="icon-shared">
-				this is the sharing tab
-			</AppSidebarTab>
-			<AppSidebarTab id="versions" name="Versions" icon="icon-history">
-				this is the versions tab
-			</AppSidebarTab>
-		</AppSidebar>
 	</Content>
 </template>
 <script>
@@ -65,24 +38,13 @@ import AppContent from '@nextcloud/vue/dist/Components/AppContent'
 import AppNavigation from '@nextcloud/vue/dist/Components/AppNavigation'
 import AppNavigationItem from '@nextcloud/vue/dist/Components/AppNavigationItem'
 import AppNavigationNew from '@nextcloud/vue/dist/Components/AppNavigationNew'
-import AppNavigationSettings from '@nextcloud/vue/dist/Components/AppNavigationSettings'
-import AppSidebar from '@nextcloud/vue/dist/Components/AppSidebar'
-import AppSidebarTab from '@nextcloud/vue/dist/Components/AppSidebarTab'
-import AppNavigationCounter from '@nextcloud/vue/dist/Components/AppNavigationCounter'
-import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
-import ActionLink from '@nextcloud/vue/dist/Components/ActionLink'
-import AppNavigationIconBullet from '@nextcloud/vue/dist/Components/AppNavigationIconBullet'
-import ActionCheckbox from '@nextcloud/vue/dist/Components/ActionCheckbox'
-import ActionInput from '@nextcloud/vue/dist/Components/ActionInput'
-import ActionRouter from '@nextcloud/vue/dist/Components/ActionRouter'
-import ActionText from '@nextcloud/vue/dist/Components/ActionText'
-import ActionTextEditable from '@nextcloud/vue/dist/Components/ActionTextEditable'
 
 import axios from 'axios'
 axios.defaults.headers.post['Accept'] = 'application/json';
 
 import { getFilePickerBuilder } from '@nextcloud/dialogs'
 
+import BarChart from './BarChart.js'
 import '@nextcloud/dialogs/styles/toast.scss'
 
 export default {
@@ -93,18 +55,7 @@ export default {
 		AppNavigation,
 		AppNavigationItem,
 		AppNavigationNew,
-		AppNavigationSettings,
-		AppSidebar,
-		AppSidebarTab,
-		AppNavigationCounter,
-		ActionButton,
-		ActionLink,
-		AppNavigationIconBullet,
-		ActionCheckbox,
-		ActionInput,
-		ActionRouter,
-		ActionText,
-		ActionTextEditable,
+		BarChart,
 	},
 	props: [ 'dbPath' ],
 	data() {
@@ -112,23 +63,99 @@ export default {
             databaseFileId: null,
             databaseFilePath: this.dbPath,
             devices: [],
-            loading: false,
-            show: true,
+			loading: false,
+			selectedDevice: null,
+			show: true,
+			deviceData: {
+				labels: [],
+				kinds: [],
+				steps: [],
+				activityColors: [],
+				heartRates: [],
+				lastHeartRate: null
+			},
+			chartData: {},
+			chartOptions: {
+					legend: {
+						display: false
+					},
+					scales: {
+						xAxes: [{
+							gridLines: {
+								offsetGridLines: true
+							},
+							stacked: true
+						}],
+						yAxes: [{
+							stacked: true
+						}]
+					},
+					responsive: true,
+					elements: {
+						line: {
+							tension: 0
+						}
+					}
+				}
 		}
-    },
+	},
+	watch: {
+		selectedDevice: function() {
+			this.loadDeviceData(moment().format('YYYY/MM/DD/HH/mm'));
+		}
+	},
 	methods: {
-		addOption(val) {
-			this.options.push(val)
-			this.select.push(val)
+		getActivityColor(current) {
+			switch (current) {
+				case 1: // Activity
+					return '#3ADF00';
+				case 2: // Light sleep
+					return '#2ECCFA';
+				case 4: // Deep sleep
+					return '#0040FF';
+				case 8: // Not worn
+					return '#AAAAAA';
+				default:
+					return '#AAAAAA';
+			}
 		},
-		previous(data) {
-			console.debug(data)
+		getSteps(current, steps) {
+			switch (current) {
+				case 1: // Activity
+				case 2: // Light sleep
+				case 4: // Deep sleep
+				case 8: // Not worn
+					return Math.min(250, Math.max(10, steps));
+				default:
+					return 2;
+			}			
 		},
-		next(data) {
-			console.debug(data)
+
+		generateGraphs() {
+			console.log("now i'm generating graphs");
+			this.chartData = {
+				labels: this.deviceData.labels,
+				datasets: [
+					{
+						label: 'Activity',
+						data: this.deviceData.steps,
+						backgroundColor: this.deviceData.activityColors,
+						barThickness: 100
+					},
+					{
+						label: 'Heart rate',
+						data: this.deviceData.heartRates,
+						backgroundColor: '#ffa500',
+						borderColor: '#ffa500',
+						type: 'line',
+						pointStyle: 'rect',
+						pointRadius: 0,
+						fill: false
+					}
+				]};
 		},
-		close(data) {
-			console.debug(data)
+		displayDeviceTitle(device) {
+			return device.NAME + ' <em>' + device.IDENTIFIER + '</em>' 
 		},
 		filePickDatabase(e) {
 			const picker = getFilePickerBuilder("Test")
@@ -143,10 +170,6 @@ export default {
 						path: file
 					}).then((result) => {
                         console.log(result.data.ocs.data.fileId);
-                        // this.selectDatabase(
-                        //     result.data.ocs.data.fileId,
-                        //     file.substring(1) // Remove leading slash
-                        // );
                         this.databaseFileId = result.data.ocs.data.fileId;
                         this.databaseFilePath = file.substring(1) // Remove leading slash
                         this.fetchDatabaseData();
@@ -156,27 +179,51 @@ export default {
                 });
 				
         },
-        // selectDatabase(id, path) {
-        //     this.databaseFileId = id;
-        //     this.databaseFilePath = path;
-        //     if( this.databaseFileID > 0 ) {
-        //         loadDevices();
-        //     }
-        // },
         async fetchDatabaseData() {
             console.log("Off I go");
             const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
             let results = response.data.ocs.data;
-            console.dir(response.data);
+            console.dir(response.data.ocs.data);
 
-            this.devices = results;
+			this.devices = results;
+			if (this.devices.length == 1) {
+				this.selectedDevice = this.devices[0];
+			}
         },
-        loadDevices() {
-            console.log("Imagine I'm loading devices now");
-        },
-		log(e) {
-			console.debug(e)
+        async loadDeviceData(date) {
+			console.log("Imagine I'm loading devices now");
+			const response = await axios.get(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + date);
+			let results = response.data.ocs.data;
+			console.dir(results);
+			//TODO this might make more sense to do on php side in the future.
+			results.forEach((tick) => {
+				this.deviceData.labels.push(moment(tick.TIMESTAMP * 1000).calendar());
+				let kind = parseInt(tick.RAW_KIND, 10);
+				this.deviceData.kinds.push(kind * 10);
+				this.deviceData.activityColors.push(this.getActivityColor(kind));
+				this.deviceData.steps.push(this.getSteps(kind, tick.STEPS));
+
+				if (tick.HEART_RATE > 0 && tick.HEART_RATE < 255) {
+					this.deviceData.lastHeartRate = tick.HEART_RATE;
+					this.deviceData.heartRates.push(tick.HEART_RATE);
+				} else if (tick.HEART_RATE > 0) {
+					this.deviceData.heartRates.push(this.deviceData.lastHeartRate);
+					this.deviceData.lastHeartRate = null;
+				} else {
+					this.deviceData.heartRates.push(null);
+				}
+			});
+
+			this.generateGraphs()
 		},
+		
 	},
+	computed: {
+		myStyles() {
+			return  {
+				height: '700px'
+			}
+		}
+	}
 }
 </script>
