@@ -116,6 +116,7 @@ class ApiController extends OCSController {
 
 	/**
 	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 *
 	 * @param int $databaseId
 	 * @return DataResponse
@@ -143,6 +144,7 @@ class ApiController extends OCSController {
 
 	/**
 	 * @NoAdminRequired
+	 * @NoCSRFRequired
 	 *
 	 * @param int $databaseId
 	 * @param int $deviceId

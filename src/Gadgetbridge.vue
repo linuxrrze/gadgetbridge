@@ -7,7 +7,10 @@
 				button-id="new-gadgetbridge-button"
 				button-class="icon-add"
 				@click="filePickDatabase" />
-			<ActionCheckbox v-if="databasePath">{{databasePath}}</ActionCheckbox>
+			<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" :allow-collapse="devices > 0" icon="icon-folder">
+                <AppNavigationItem v-if="true" title="test"></AppNavigationItem>
+			    <template v-for="device in devices"><AppNavigationItem v-bind:key="device._id" :title="device.NAME"></AppNavigationItem></template>
+            </AppNavigationItem>
 		</AppNavigation>
 		<AppContent>
 			<span>This is the content</span>
@@ -78,12 +81,12 @@ import ActionTextEditable from '@nextcloud/vue/dist/Components/ActionTextEditabl
 import axios from 'axios'
 axios.defaults.headers.post['Accept'] = 'application/json';
 
-import { showMessage, getFilePickerBuilder, FilePicker, FilePickerBuilder } from '@nextcloud/dialogs'
+import { getFilePickerBuilder } from '@nextcloud/dialogs'
 
 import '@nextcloud/dialogs/styles/toast.scss'
 
 export default {
-	name: 'App',
+	name: 'Gadgetbridge',
 	components: {
 		Content,
 		AppContent,
@@ -104,13 +107,15 @@ export default {
 		ActionTextEditable,
 	},
 	props: [ 'dbPath' ],
-	data: function() {
+	data() {
 		return {
-            databasePath: this.dbPath,
+            databaseFileId: null,
+            databaseFilePath: this.dbPath,
+            devices: [],
             loading: false,
             show: true,
 		}
-	},
+    },
 	methods: {
 		addOption(val) {
 			this.options.push(val)
@@ -126,7 +131,6 @@ export default {
 			console.debug(data)
 		},
 		filePickDatabase(e) {
-			showMessage( "Test Message" );
 			const picker = getFilePickerBuilder("Test")
 				.setMultiSelect(false)
 				.setModal(true)
@@ -137,12 +141,39 @@ export default {
 				.then(file => {
 					axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
 						path: file
-					})
-				})
-				.catch(error => { 
-					OC.Notification. showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
-				});
-		},
+					}).then((result) => {
+                        console.log(result.data.ocs.data.fileId);
+                        // this.selectDatabase(
+                        //     result.data.ocs.data.fileId,
+                        //     file.substring(1) // Remove leading slash
+                        // );
+                        this.databaseFileId = result.data.ocs.data.fileId;
+                        this.databaseFilePath = file.substring(1) // Remove leading slash
+                        this.fetchDatabaseData();
+                    }).catch(error => { 
+					    OC.Notification. showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
+				    });
+                });
+				
+        },
+        // selectDatabase(id, path) {
+        //     this.databaseFileId = id;
+        //     this.databaseFilePath = path;
+        //     if( this.databaseFileID > 0 ) {
+        //         loadDevices();
+        //     }
+        // },
+        async fetchDatabaseData() {
+            console.log("Off I go");
+            const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
+            let results = response.data.ocs.data;
+            console.dir(response.data);
+
+            this.devices = results;
+        },
+        loadDevices() {
+            console.log("Imagine I'm loading devices now");
+        },
 		log(e) {
 			console.debug(e)
 		},

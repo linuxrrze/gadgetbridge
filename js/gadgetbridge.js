@@ -5307,6 +5307,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_18__);
 /* harmony import */ var _nextcloud_dialogs_styles_toast_scss__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! @nextcloud/dialogs/styles/toast.scss */ "./node_modules/@nextcloud/dialogs/styles/toast.scss");
 /* harmony import */ var _nextcloud_dialogs_styles_toast_scss__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(_nextcloud_dialogs_styles_toast_scss__WEBPACK_IMPORTED_MODULE_19__);
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+//
+//
+//
 //
 //
 //
@@ -5387,7 +5394,7 @@ axios__WEBPACK_IMPORTED_MODULE_17___default.a.defaults.headers.post['Accept'] = 
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  name: 'App',
+  name: 'Gadgetbridge',
   components: {
     Content: _nextcloud_vue_dist_Components_Content__WEBPACK_IMPORTED_MODULE_0___default.a,
     AppContent: _nextcloud_vue_dist_Components_AppContent__WEBPACK_IMPORTED_MODULE_1___default.a,
@@ -5410,7 +5417,9 @@ axios__WEBPACK_IMPORTED_MODULE_17___default.a.defaults.headers.post['Accept'] = 
   props: ['dbPath'],
   data: function data() {
     return {
-      databasePath: this.dbPath,
+      databaseFileId: null,
+      databaseFilePath: this.dbPath,
+      devices: [],
       loading: false,
       show: true
     };
@@ -5430,15 +5439,63 @@ axios__WEBPACK_IMPORTED_MODULE_17___default.a.defaults.headers.post['Accept'] = 
       console.debug(data);
     },
     filePickDatabase: function filePickDatabase(e) {
-      Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_18__["showMessage"])("Test Message");
+      var _this = this;
+
       var picker = Object(_nextcloud_dialogs__WEBPACK_IMPORTED_MODULE_18__["getFilePickerBuilder"])("Test").setMultiSelect(false).setModal(true).build();
       picker.pick().then(function (file) {
         axios__WEBPACK_IMPORTED_MODULE_17___default.a.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
           path: file
+        }).then(function (result) {
+          console.log(result.data.ocs.data.fileId); // this.selectDatabase(
+          //     result.data.ocs.data.fileId,
+          //     file.substring(1) // Remove leading slash
+          // );
+
+          _this.databaseFileId = result.data.ocs.data.fileId;
+          _this.databaseFilePath = file.substring(1); // Remove leading slash
+
+          _this.fetchDatabaseData();
+        })["catch"](function (error) {
+          OC.Notification.showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
         });
-      })["catch"](function (error) {
-        OC.Notification.showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
       });
+    },
+    // selectDatabase(id, path) {
+    //     this.databaseFileId = id;
+    //     this.databaseFilePath = path;
+    //     if( this.databaseFileID > 0 ) {
+    //         loadDevices();
+    //     }
+    // },
+    fetchDatabaseData: function fetchDatabaseData() {
+      var _this2 = this;
+
+      return _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+        var response, results;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                console.log("Off I go");
+                _context.next = 3;
+                return axios__WEBPACK_IMPORTED_MODULE_17___default.a.get(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + _this2.databaseFileId + '/devices');
+
+              case 3:
+                response = _context.sent;
+                results = response.data.ocs.data;
+                console.dir(response.data);
+                _this2.devices = results;
+
+              case 7:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee);
+      }))();
+    },
+    loadDevices: function loadDevices() {
+      console.log("Imagine I'm loading devices now");
     },
     log: function log(e) {
       console.debug(e);
@@ -45065,8 +45122,32 @@ var render = function() {
               })
             : _vm._e(),
           _vm._v(" "),
-          _vm.databasePath
-            ? _c("ActionCheckbox", [_vm._v(_vm._s(_vm.databasePath))])
+          _vm.databaseFilePath
+            ? _c(
+                "AppNavigationItem",
+                {
+                  attrs: {
+                    title: _vm.databaseFilePath,
+                    "allow-collapse": _vm.devices > 0,
+                    icon: "icon-folder"
+                  }
+                },
+                [
+                  true
+                    ? _c("AppNavigationItem", { attrs: { title: "test" } })
+                    : undefined,
+                  _vm._v(" "),
+                  _vm._l(_vm.devices, function(device) {
+                    return [
+                      _c("AppNavigationItem", {
+                        key: device._id,
+                        attrs: { title: device.NAME }
+                      })
+                    ]
+                  })
+                ],
+                2
+              )
             : _vm._e()
         ],
         1

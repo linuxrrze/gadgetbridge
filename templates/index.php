@@ -28,7 +28,7 @@
 /** @var $_ array */
 ?>
 <div id="content">
-<Gadgetbridge db-path=<?php p($_['databasePath']);?>>
+<Gadgetbridge db-path="<?= p($_['databasePath']);?>" >
 </Gadgetbridge>
 </div>
 <!-- <div id="app-navigation">
