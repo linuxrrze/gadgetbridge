@@ -37,12 +37,15 @@
     "axios": "^0.19.2",
     "chart.js": "^2.9.3",
     "jquery": "^3.5.1",
+    "luxon": "^1.24.1",
     "moment": "^2.25.3",
     "nextcloud-l10n": "^0.1.1",
     "ts-loader": "^7.0.4",
     "typescript": "^3.9.2",
     "vue": "^2.6.11",
-    "vue-chartjs": "^3.5.0"
+    "vue-chartjs": "^3.5.0",
+    "vue-datetime": "^1.0.0-beta.13",
+    "weekstart": "^1.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",

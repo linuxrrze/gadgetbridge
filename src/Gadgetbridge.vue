@@ -26,6 +26,9 @@
 					<p>Please Import data from android app to continue</p>
 				</div>
 				<template v-else>
+					<datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" />
+					<datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" />
+
 					<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
 				</template>
 			</AppContent>
@@ -45,6 +48,9 @@ import axios from 'axios'
 axios.defaults.headers.post['Accept'] = 'application/json';
 import BarChart from './BarChart.js'
 
+// Datetime picker
+import {Datetime } from 'vue-datetime';
+import 'vue-datetime/dist/vue-datetime.css'
 export default {
 	name: 'Gadgetbridge',
 	components: {
@@ -53,8 +59,8 @@ export default {
 		AppNavigation,
 		AppNavigationItem,
 		AppNavigationNew,
-
 		BarChart,
+		Datetime
 	},
 	data() {
 		return {
@@ -72,6 +78,9 @@ export default {
 				heartRates: [],
 				lastHeartRate: null
 			},
+			beginRangeTime: {},
+			startTime: "",
+			endTime: "",
 			chartData: {},
 			chartOptions: {
 					legend: {
@@ -114,12 +123,23 @@ export default {
 			this.fetchDatabaseData();
 		},
 		selectedDevice: function() {
-			this.loadDeviceData(moment().format('YYYY/MM/DD/HH/mm'));
+			this.loadDeviceData();
+		},
+		startTime: function() {
+			this.loadDeviceData();
+		},
+		endTime: function() {
+			this.loadDeviceData();
 		}
 	},
 	beforeMount() {
 		this.databaseFilePath = $('#gadgetbridgecontent').attr('data-dbpath');
 		this.databaseFileId = $('#gadgetbridgecontent').attr('data-dbfileid');
+		this.endTime = moment().toISOString();
+		this.startTime = moment().subtract(1,'d').toISOString();
+	},
+	mounted() {
+
 	},
 	methods: {
 		getActivityColor(current) {
@@ -196,15 +216,15 @@ export default {
         async fetchDatabaseData() {
             const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
             let results = response.data.ocs.data;
-            console.dir(response.data.ocs.data);
 
 			this.devices = results;
 			if (this.devices.length == 1) {
 				this.selectedDevice = this.devices[0];
 			}
         },
-        async loadDeviceData(date) {
-			const response = await axios.get(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + date);
+        async loadDeviceData() {
+			const response = await axios.get(
+					OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix());
 			let results = response.data.ocs.data;
 			//TODO this might make more sense to do on php side in the future.
 			results.forEach((tick) => {
@@ -225,8 +245,8 @@ export default {
 					this.deviceData.heartRates.push(null);
 				}
 			});
-
-			this.generateGraphs()
+			this.beginRangeTime = moment(this.selectedDevice.STARTTIMESTAMP.TIMESTAMP * 1000).toISOString();
+			this.generateGraphs();
 		},
 		
 	},
@@ -236,8 +256,8 @@ export default {
 				height: '700px'
 			}
 		},
-		deviceTooltip(device) {
-			return `ID: ${this.device.IDENTIFIER}`;
+		endRangeTime() {
+			return moment(this.startTime).add(1,'h').toISOString();
 		}
 	}
 }

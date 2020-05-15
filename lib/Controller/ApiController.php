@@ -157,6 +157,7 @@ class ApiController extends OCSController {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
+	 * OBSOLETE: Remove when convenient
 	 * @param int $databaseId
 	 * @param int $deviceId
 	 * @param int $year
@@ -201,7 +202,49 @@ class ApiController extends OCSController {
 
 		return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
 	}
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @param int $databaseId
+	 * @param int $deviceId
+	 * @param int $year
+	 * @param int $startTimestamp
+	 * @param int $endTimestamp
+	 * 
+	 * @return DataResponse
+	 */
+	public function getNewDeviceData($databaseId, $deviceId, $startTimestamp, $endTimestamp) {
+		try {
+			$connection = $this->getConnection($databaseId);
+		} catch (NotFoundException $e) {
+			return new DataResponse([], Http::STATUS_NOT_FOUND);
+		} catch (\InvalidArgumentException $e) {
+			return new DataResponse([], Http::STATUS_BAD_REQUEST);
+		}
 
+		// TODO: Is any of this necessary?
+		$query = $connection->getQueryBuilder();
+		$query->automaticTablePrefix(false);
+		$query->select('*')
+			->from('DEVICE')
+			->where($query->expr()->eq('_id', $query->createNamedParameter($deviceId)));
+
+		$result = $query->execute();
+		$device = $result->fetch();
+		$result->closeCursor();
+		
+		//EndTodo
+		$start = \DateTime::createFromFormat('U', $startTimestamp);
+		$end = \DateTime::createFromFormat('U', $endTimestamp);
+
+
+		if ($device['TYPE'] === '14') {
+			return $this->getMiBandData($connection, $device, $start, $end);
+		}
+
+		return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
+	}
 	/**
 	 * @param IDBConnection $connection
 	 * @param array $device
@@ -216,7 +259,7 @@ class ApiController extends OCSController {
 			->select('*')
 			->from('MI_BAND_ACTIVITY_SAMPLE')
 			->where($query->expr()->eq('DEVICE_ID', $query->createNamedParameter($device['_id'])))
-			->andWhere($query->expr()->gte('TIMESTAMP', $query->createNamedParameter($start->getTimestamp() - 60000)))
+			->andWhere($query->expr()->gte('TIMESTAMP', $query->createNamedParameter($start->getTimestamp())))
 			->andWhere($query->expr()->lte('TIMESTAMP', $query->createNamedParameter($end->getTimestamp())))
 			->orderBy('TIMESTAMP', 'ASC')
 		;
