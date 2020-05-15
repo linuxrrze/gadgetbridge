@@ -138,6 +138,16 @@ class ApiController extends OCSController {
 
 		$result = $query->execute();
 		$devices = $result->fetchAll();
+		foreach ($devices as &$device) {
+			// This covers the MI bands that I know about. TODO expand to cover other devices possibly
+			if ($device['TYPE'] == 14 || $device['TYPE'] == 11) {
+				$newQuery = $connection->getQueryBuilder();
+				$newQuery->select('TIMESTAMP')
+					->from('MI_BAND_ACTIVITY_SAMPLE')
+					->where($newQuery->expr()->eq('DEVICE_ID', $newQuery->createNamedParameter($device['_id'])));
+				$device['STARTTIMESTAMP'] = min($newQuery->execute()->fetchAll());
+			}
+		}
 		$result->closeCursor();
 
 		return new DataResponse($devices);

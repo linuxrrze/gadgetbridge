@@ -10,7 +10,12 @@
 				<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
 					<AppNavigationItem title="Test" style="display:none"></AppNavigationItem> <!-- This is stupid, but makes the nesting work.  FIXME -->
 					<template v-for="device in devices">
-						<AppNavigationItem v-bind:key="device._id" v-bind:title="device.NAME + device.IDENTIFIER" @click="selectedDevice = device" :class="{active: (selectedDevice == device) }">Foo</AppNavigationItem>
+						<AppNavigationItem 
+							:key="device._id" 
+							:title="device.NAME"
+							v-tooltip="`ID: ${device.IDENTIFIER}`" 
+							@click="selectedDevice = device" 
+							:class="{active: (selectedDevice == device) }" />
 					</template>
 				</AppNavigationItem>
 			</AppNavigation>
@@ -33,13 +38,12 @@ import AppNavigation from '@nextcloud/vue/dist/Components/AppNavigation'
 import AppNavigationItem from '@nextcloud/vue/dist/Components/AppNavigationItem'
 import AppNavigationNew from '@nextcloud/vue/dist/Components/AppNavigationNew'
 
+import { getFilePickerBuilder } from '@nextcloud/dialogs'
+import '@nextcloud/dialogs/styles/toast.scss'
+
 import axios from 'axios'
 axios.defaults.headers.post['Accept'] = 'application/json';
-
-import { getFilePickerBuilder } from '@nextcloud/dialogs'
-
 import BarChart from './BarChart.js'
-import '@nextcloud/dialogs/styles/toast.scss'
 
 export default {
 	name: 'Gadgetbridge',
@@ -71,20 +75,31 @@ export default {
 			chartData: {},
 			chartOptions: {
 					legend: {
-						display: false
+						display: true
 					},
 					scales: {
 						xAxes: [{
+							// type: 'time',
+							// unit: 'millisecond',
+							// distribution: 'series',
+							// time: {
+							// 	displayFormats: {
+							// 		month: 'MMMM Do YYYY hh:mm a'
+							// 	},
+							// },
 							gridLines: {
 								offsetGridLines: true
 							},
-							stacked: true
+							stacked: true,
+							ticks: {
+								autoSkip: true,
+								maxTicksLimit: 20
+							}
 						}],
 						yAxes: [{
 							stacked: true
 						}]
 					},
-					responsive: true,
 					elements: {
 						line: {
 							tension: 0
@@ -134,7 +149,6 @@ export default {
 		},
 
 		generateGraphs() {
-			console.log("now i'm generating graphs");
 			this.chartData = {
 				labels: this.deviceData.labels,
 				datasets: [
@@ -180,7 +194,6 @@ export default {
 				
         },
         async fetchDatabaseData() {
-            console.log("Off I go");
             const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
             let results = response.data.ocs.data;
             console.dir(response.data.ocs.data);
@@ -191,23 +204,22 @@ export default {
 			}
         },
         async loadDeviceData(date) {
-			console.log("Imagine I'm loading devices now");
 			const response = await axios.get(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + date);
 			let results = response.data.ocs.data;
-			console.dir(results);
 			//TODO this might make more sense to do on php side in the future.
 			results.forEach((tick) => {
 				this.deviceData.labels.push(moment(tick.TIMESTAMP * 1000).calendar());
+				// this.deviceData.labels.push(tick.TIMESTAMP);
 				let kind = parseInt(tick.RAW_KIND, 10);
 				this.deviceData.kinds.push(kind * 10);
 				this.deviceData.activityColors.push(this.getActivityColor(kind));
-				this.deviceData.steps.push(this.getSteps(kind, tick.STEPS));
+				this.deviceData.steps.push({ x: tick.TIMESTAMP * 1000, y: this.getSteps(kind, tick.STEPS)});
 
 				if (tick.HEART_RATE > 0 && tick.HEART_RATE < 255) {
 					this.deviceData.lastHeartRate = tick.HEART_RATE;
-					this.deviceData.heartRates.push(tick.HEART_RATE);
+					this.deviceData.heartRates.push({x: tick.TIMESTAMP * 1000, y: tick.HEART_RATE});
 				} else if (tick.HEART_RATE > 0) {
-					this.deviceData.heartRates.push(this.deviceData.lastHeartRate);
+					this.deviceData.heartRates.push({x: tick.TIMESTAMP * 1000, y: this.deviceData.lastHeartRate});
 					this.deviceData.lastHeartRate = null;
 				} else {
 					this.deviceData.heartRates.push(null);
@@ -223,6 +235,9 @@ export default {
 			return  {
 				height: '700px'
 			}
+		},
+		deviceTooltip(device) {
+			return `ID: ${this.device.IDENTIFIER}`;
 		}
 	}
 }

@@ -13,6 +13,10 @@ import Vue from 'vue'
 import { translate, translatePlural } from 'nextcloud-l10n'
 import Gadgetbridge from './Gadgetbridge';
 
+import { Tooltip } from '@nextcloud/vue'
+console.dir(Tooltip);
+Vue.directive( 'tooltip', Tooltip )
+
 Vue.prototype.t = translate
 Vue.prototype.n = translatePlural
 
