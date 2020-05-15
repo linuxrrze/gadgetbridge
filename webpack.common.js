@@ -46,6 +46,9 @@ const config = {
 	resolve: {
 		extensions: ['*', '.js', '.vue'],
 		symlinks: false,
+		alias: {
+			'vue$': 'vue/dist/vue.esm.js'
+		}
 	},
 }
 

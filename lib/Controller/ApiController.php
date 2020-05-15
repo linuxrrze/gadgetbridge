@@ -104,6 +104,7 @@ class ApiController extends OCSController {
 				'tablePrefix' => '',
 			]);
 		} catch (DBALException $e) {
+			throw new \InvalidArgumentException('Unprocessable entity', Http::STATUS_UNPROCESSABLE_ENTITY);
 			return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
@@ -215,8 +216,8 @@ class ApiController extends OCSController {
 		$result->closeCursor();
 
 		$this->lastValidKind = $this->getLastMiBandActivity($connection, $device, $start->getTimestamp());
-		$data = array_map([$this, 'postProcessing'], $data);
 
+		$data = array_map([$this, 'postProcessing'], $data);
 		/**
 		 * (int) $row['DEVICE_ID']
 		 * (int) $row['USER_ID']

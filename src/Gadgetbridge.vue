@@ -1,35 +1,29 @@
 <template>
-<Content :class="{'icon-loading': loading}" app-name="gadgetbridge">
-		<AppNavigation>
-			<AppNavigationNew v-if="!loading"
-				:text="t('gadgetbridge', 'Select Database')"
-				:disabled="false"
-				button-id="new-gadgetbridge-button"
-				button-class="icon-add"
-				@click="filePickDatabase" />
-			<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
-				<AppNavigationItem title="Test" style="display:none"></AppNavigationItem> <!-- This is stupid, but makes the nesting work.  FIXME -->
-				<template v-for="device in devices">
-					<li :key="device._id" :class="{ active: (selectedDevice == device) }">
-						<a href="#" @click="selectedDevice = device">
-							<i class="fa fa-upload"></i>
-							<span>{{device.NAME}}</span> <em>{{device.IDENTIFIER}}</em>
-						</a>
-					</li>
-			    	<!-- <AppNavigationItem v-bind:key="device._id" v-bind:title="displayDeviceTitle(device)"></AppNavigationItem> -->
+	<Content id="gadgetbridgecontent" :class="{'icon-loading': loading}" app-name="gadgetbridge">
+			<AppNavigation>
+				<AppNavigationNew v-if="!loading"
+					:text="t('gadgetbridge', 'Select Database')"
+					:disabled="false"
+					button-id="new-gadgetbridge-button"
+					button-class="icon-add"
+					@click="filePickDatabase" />
+				<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
+					<AppNavigationItem title="Test" style="display:none"></AppNavigationItem> <!-- This is stupid, but makes the nesting work.  FIXME -->
+					<template v-for="device in devices">
+						<AppNavigationItem v-bind:key="device._id" v-bind:title="device.NAME + device.IDENTIFIER" @click="selectedDevice = device" :class="{active: (selectedDevice == device) }">Foo</AppNavigationItem>
+					</template>
+				</AppNavigationItem>
+			</AppNavigation>
+			<AppContent>
+				<div id="empty-content" v-if="!this.selectedDevice">
+					<div class="icon-activity"></div>
+					<h2>No Data found</h2>
+					<p>Please Import data from android app to continue</p>
+				</div>
+				<template v-else>
+					<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
 				</template>
-            </AppNavigationItem>
-		</AppNavigation>
-		<AppContent>
-			<div id="empty-content" v-if="!this.selectedDevice">
-				<div class="icon-activity"></div>
-				<h2>No Data found</h2>
-				<p>Please Import data from android app to continue</p>
-			</div>
-			<template v-else>
-				<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
-			</template>
-		</AppContent>
+			</AppContent>
 	</Content>
 </template>
 <script>
@@ -55,9 +49,9 @@ export default {
 		AppNavigation,
 		AppNavigationItem,
 		AppNavigationNew,
+
 		BarChart,
 	},
-	props: [ 'dbPath' ],
 	data() {
 		return {
             databaseFileId: null,
@@ -95,14 +89,22 @@ export default {
 						line: {
 							tension: 0
 						}
-					}
+					},
+					maintainAspectRatio: false
 				}
 		}
 	},
 	watch: {
+		databaseFileId: function() {
+			this.fetchDatabaseData();
+		},
 		selectedDevice: function() {
 			this.loadDeviceData(moment().format('YYYY/MM/DD/HH/mm'));
 		}
+	},
+	beforeMount() {
+		this.databaseFilePath = $('#gadgetbridgecontent').attr('data-dbpath');
+		this.databaseFileId = $('#gadgetbridgecontent').attr('data-dbfileid');
 	},
 	methods: {
 		getActivityColor(current) {
@@ -169,10 +171,8 @@ export default {
 					axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
 						path: file
 					}).then((result) => {
-                        console.log(result.data.ocs.data.fileId);
                         this.databaseFileId = result.data.ocs.data.fileId;
                         this.databaseFilePath = file.substring(1) // Remove leading slash
-                        this.fetchDatabaseData();
                     }).catch(error => { 
 					    OC.Notification. showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
 				    });
@@ -227,3 +227,11 @@ export default {
 	}
 }
 </script>
+
+<style scoped>
+
+	canvas {
+		margin: 15px;
+		width: 95% !important;
+	}
+</style>
