@@ -1,5 +1,5 @@
 <template>
-	<Content id="gadgetbridgecontent" :class="{'icon-loading': loading}" app-name="gadgetbridge">
+	<Content id="gadgetbridgecontent" :class="{'icon-loading': loading}" class="main-display" app-name="gadgetbridge">
 			<AppNavigation>
 				<AppNavigationNew v-if="!loading"
 					:text="t('gadgetbridge', 'Select Database')"
@@ -26,9 +26,10 @@
 					<p>Please Import data from android app to continue</p>
 				</div>
 				<template v-else>
-					<datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" />
-					<datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" />
-
+					<div class="row">
+						<div class="row"><h3>Start Time: </h3> <datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
+						<div class="row"><h3>End Time: </h3> <datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
+					</div>
 					<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
 				</template>
 			</AppContent>
@@ -253,7 +254,9 @@ export default {
 	computed: {
 		myStyles() {
 			return  {
-				height: '700px'
+				// height: `${this.height}px`,
+				// width: '95%',
+				// position: 'relative'
 			}
 		},
 		endRangeTime() {
@@ -264,9 +267,13 @@ export default {
 </script>
 
 <style scoped>
-
-	canvas {
-		margin: 15px;
-		width: 95% !important;
-	}
+.main-display {
+	width: 95%;
+	height: 100%;
+	position: relative;
+}
+.row {
+	display: flex;
+	justify-content: space-between;
+}
 </style>
