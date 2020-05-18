@@ -26,11 +26,11 @@
 					<p>Please Import data from android app to continue</p>
 				</div>
 				<template v-else>
-					<div class="row">
-						<div class="row"><h3>Start Time: </h3> <datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
-						<div class="row"><h3>End Time: </h3> <datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
-					</div>
 					<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
+					<div class="row">
+						<div class="column"><h3>Begin</h3> <datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
+						<div class="column"><h3>End</h3> <datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
+					</div>
 				</template>
 			</AppContent>
 	</Content>
@@ -52,6 +52,7 @@ import BarChart from './BarChart.js'
 // Datetime picker
 import {Datetime } from 'vue-datetime';
 import 'vue-datetime/dist/vue-datetime.css'
+
 export default {
 	name: 'Gadgetbridge',
 	components: {
@@ -82,10 +83,14 @@ export default {
 			beginRangeTime: {},
 			startTime: "",
 			endTime: "",
+			displayCharts: {
+				heartRate: true,
+				activity: true,
+			},
 			chartData: {},
 			chartOptions: {
 					legend: {
-						display: true
+						display: true,
 					},
 					scales: {
 						xAxes: [{
@@ -137,7 +142,7 @@ export default {
 		this.databaseFilePath = $('#gadgetbridgecontent').attr('data-dbpath');
 		this.databaseFileId = $('#gadgetbridgecontent').attr('data-dbfileid');
 		this.endTime = moment().toISOString();
-		this.startTime = moment().subtract(1,'d').toISOString();
+		this.startTime = moment().subtract(1,'w').toISOString();
 	},
 	mounted() {
 
@@ -187,7 +192,16 @@ export default {
 						type: 'line',
 						pointStyle: 'rect',
 						pointRadius: 0,
-						fill: false
+						fill: false,
+						spanGaps: true
+					},
+					{
+						label: 'Steps',
+						data: this.deviceData.steps,
+						pointStyle: 'rect',
+						pointRadius: 1,
+						fill: false,
+						spanGaps: true
 					}
 				]};
 		},
@@ -199,8 +213,6 @@ export default {
 				.setMultiSelect(false)
 				.setModal(true)
 				.build();
-
-
 			picker.pick()
 				.then(file => {
 					axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
@@ -230,7 +242,6 @@ export default {
 			//TODO this might make more sense to do on php side in the future.
 			results.forEach((tick) => {
 				this.deviceData.labels.push(moment(tick.TIMESTAMP * 1000).calendar());
-				// this.deviceData.labels.push(tick.TIMESTAMP);
 				let kind = parseInt(tick.RAW_KIND, 10);
 				this.deviceData.kinds.push(kind * 10);
 				this.deviceData.activityColors.push(this.getActivityColor(kind));
@@ -275,5 +286,9 @@ export default {
 .row {
 	display: flex;
 	justify-content: space-between;
+}
+.column {
+	display: flex;
+	flex-direction: column
 }
 </style>
