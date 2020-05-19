@@ -269,7 +269,15 @@ class ApiController extends OCSController {
 		$result->closeCursor();
 
 		$this->lastValidKind = $this->getLastMiBandActivity($connection, $device, $start->getTimestamp());
-
+		$range = $end->diff($start);
+		// Lets keep the amount of samples provided to the frontend realistic.
+		// A quick and dirty way of doing this: divide all samples by number of days requested.
+		$data = array_values(array_filter($data, function($k) use ($range) {
+			if ($range->days > 1) {
+				return $k % $range->days == 0;
+			}
+			return true;
+		}, ARRAY_FILTER_USE_KEY));
 		$data = array_map([$this, 'postProcessing'], $data);
 		/**
 		 * (int) $row['DEVICE_ID']
