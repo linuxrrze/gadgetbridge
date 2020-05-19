@@ -26,10 +26,10 @@
 					<p>Please Import data from android app to continue</p>
 				</div>
 				<template v-else>
-					<bar-chart :chart-data="chartData" :options="chartOptions" :styles="myStyles" />
+					<bar-chart :chart-data="chartData" :options="chartOptions" />
 					<div class="row">
-						<div class="column"><h3>Begin</h3> <datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
-						<div class="column"><h3>End</h3> <datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
+						<div class="column"><datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
+						<div class="column"><datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
 					</div>
 				</template>
 			</AppContent>
@@ -52,6 +52,8 @@ import BarChart from './BarChart.js'
 // Datetime picker
 import {Datetime } from 'vue-datetime';
 import 'vue-datetime/dist/vue-datetime.css'
+
+import moment from 'moment';
 
 export default {
 	name: 'Gadgetbridge',
@@ -78,7 +80,8 @@ export default {
 				steps: [],
 				activityColors: [],
 				heartRates: [],
-				lastHeartRate: null
+				lastHeartRate: null,
+				stepsPerDay: {}
 			},
 			beginRangeTime: {},
 			startTime: "",
@@ -148,32 +151,6 @@ export default {
 
 	},
 	methods: {
-		getActivityColor(current) {
-			switch (current) {
-				case 1: // Activity
-					return '#3ADF00';
-				case 2: // Light sleep
-					return '#2ECCFA';
-				case 4: // Deep sleep
-					return '#0040FF';
-				case 8: // Not worn
-					return '#AAAAAA';
-				default:
-					return '#AAAAAA';
-			}
-		},
-		getSteps(current, steps) {
-			switch (current) {
-				case 1: // Activity
-				case 2: // Light sleep
-				case 4: // Deep sleep
-				case 8: // Not worn
-					return Math.min(250, Math.max(10, steps));
-				default:
-					return 2;
-			}			
-		},
-
 		generateGraphs() {
 			this.chartData = {
 				labels: this.deviceData.labels,
@@ -195,14 +172,11 @@ export default {
 						fill: false,
 						spanGaps: true
 					},
-					{
-						label: 'Steps',
-						data: this.deviceData.steps,
-						pointStyle: 'rect',
-						pointRadius: 1,
-						fill: false,
-						spanGaps: true
-					}
+					// {
+					// 	label: 'Steps',
+					// 	data: this.deviceData.steps,
+					// 	barThickness: 100
+					// }
 				]};
 		},
 		displayDeviceTitle(device) {
@@ -240,36 +214,20 @@ export default {
 					OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix());
 			let results = response.data.ocs.data;
 			//TODO this might make more sense to do on php side in the future.
-			results.forEach((tick) => {
-				this.deviceData.labels.push(moment(tick.TIMESTAMP * 1000).calendar());
-				let kind = parseInt(tick.RAW_KIND, 10);
-				this.deviceData.kinds.push(kind * 10);
-				this.deviceData.activityColors.push(this.getActivityColor(kind));
-				this.deviceData.steps.push({ x: tick.TIMESTAMP * 1000, y: this.getSteps(kind, tick.STEPS)});
-
-				if (tick.HEART_RATE > 0 && tick.HEART_RATE < 255) {
-					this.deviceData.lastHeartRate = tick.HEART_RATE;
-					this.deviceData.heartRates.push({x: tick.TIMESTAMP * 1000, y: tick.HEART_RATE});
-				} else if (tick.HEART_RATE > 0) {
-					this.deviceData.heartRates.push({x: tick.TIMESTAMP * 1000, y: this.deviceData.lastHeartRate});
-					this.deviceData.lastHeartRate = null;
-				} else {
-					this.deviceData.heartRates.push(null);
-				}
+			let stepsPerDay = {};
+			this.deviceData.labels = results.TIMESTAMPS.map((item) => {
+				return moment(item).calendar();
 			});
+			this.deviceData.kinds = results.KINDS;
+			this.deviceData.activityColors = results.ACTIVITY_COLORS;
+			this.deviceData.heartRates = results.HEART_RATES;
+			this.deviceData.steps = results.STEPS;
 			this.beginRangeTime = moment(this.selectedDevice.STARTTIMESTAMP.TIMESTAMP * 1000).toISOString();
 			this.generateGraphs();
 		},
 		
 	},
 	computed: {
-		myStyles() {
-			return  {
-				// height: `${this.height}px`,
-				// width: '95%',
-				// position: 'relative'
-			}
-		},
 		endRangeTime() {
 			return moment(this.startTime).add(1,'h').toISOString();
 		}
@@ -277,7 +235,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 .main-display {
 	width: 95%;
 	height: 100%;
@@ -290,5 +248,8 @@ export default {
 .column {
 	display: flex;
 	flex-direction: column
+}
+.vdatetime-input {
+	width: auto;
 }
 </style>

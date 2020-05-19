@@ -279,6 +279,18 @@ class ApiController extends OCSController {
 			return true;
 		}, ARRAY_FILTER_USE_KEY));
 		$data = array_map([$this, 'postProcessing'], $data);
+		$steps = array_column($data, 'STEPS');
+		$timestamps = array_column($data, 'TIMESTAMP');
+		$kinds = array_column($data, 'RAW_KIND');
+		$activityColors = array_column($data, 'ACTIVITY_COLOR');
+		$heartRates = array_column($data, 'HEART_RATE');
+		$newData = [
+			'STEPS' => $steps,
+			'TIMESTAMPS' => $timestamps,
+			'KINDS' => $kinds,
+			'ACTIVITY_COLORS' => $activityColors,
+			'HEART_RATES' => $heartRates
+		];
 		/**
 		 * (int) $row['DEVICE_ID']
 		 * (int) $row['USER_ID']
@@ -288,15 +300,19 @@ class ApiController extends OCSController {
 		 * (int) $row['RAW_KIND']
 		 * (int) $row['HEART_RATE']
 		 */
-		return new DataResponse($data);
+		return new DataResponse($newData);
 	}
 
 	protected $lastValidKind = self::TYPE_UNSET;
 
+	protected $lastValidHeartRate;
 	protected function postProcessing($data) {
 		if (empty($data)) {
 			return $data;
 		}
+
+		// We expect MS on the JS side, lets expand timestamp here.
+		$data['TIMESTAMP'] *= 1000;
 
 		$rawKind = $data['RAW_KIND'];
 		if ($rawKind !== self::TYPE_UNSET) {
@@ -317,6 +333,23 @@ class ApiController extends OCSController {
 		}
 
 		$data['RAW_KIND'] = $this->normalizeType($data['RAW_KIND']);
+		$data['ACTIVITY_COLOR'] = $this->getActivityColor($data['RAW_KIND']);
+
+		// Heartrate Normalization
+		$hRate = $data['HEART_RATE'];
+		if ($hRate > 20 && $hRate < 255) { // Valid Heartrate
+			$this->lastValidHeartRate = $hRate;
+		} else if ($hRate > 0) {
+			$data['HEART_RATE'] = $this->lastValidHeartRate;
+		} else {
+			$data['HEART_RATE'] = null;
+		}
+		$data['RAW_KIND'] *= 10;
+		if($data['RAW_KIND'] < 1) { // Unknown or unmeasured
+			$data['STEPS'] = 2;
+		} else { // Bound steps between 10 and 250.  Not sure why, old code.
+			$data['STEPS'] = min(250, max(10, $data['STEPS']));
+		}
 		return $data;
 	}
 
@@ -370,6 +403,20 @@ class ApiController extends OCSController {
 			default:
 			case self::TYPE_UNSET: // fall through
 				return ActivityKind::TYPE_UNKNOWN;
+		}
+	}
+
+	private function getActivityColor($kind) {
+		switch($kind) {
+			case ActivityKind::TYPE_ACTIVITY:
+				return '#3ADF00';
+			case ActivityKind::TYPE_LIGHT_SLEEP:
+				return '#2ECCFA';
+			case ActivityKind::TYPE_DEEP_SLEEP:
+				return '#0040FF';
+			case ActivityKind::TYPE_NOT_WORN:
+			default:
+				return '#AAAAAA';
 		}
 	}
 
