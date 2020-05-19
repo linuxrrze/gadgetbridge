@@ -157,55 +157,6 @@ class ApiController extends OCSController {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * OBSOLETE: Remove when convenient
-	 * @param int $databaseId
-	 * @param int $deviceId
-	 * @param int $year
-	 * @param int $month
-	 * @param int $day
-	 * @param int $hours
-	 * @param int $minutes
-	 * @return DataResponse
-	 */
-	public function getDeviceData($databaseId, $deviceId, $year, $month, $day, $hours, $minutes) {
-		try {
-			$connection = $this->getConnection($databaseId);
-		} catch (NotFoundException $e) {
-			return new DataResponse([], Http::STATUS_NOT_FOUND);
-		} catch (\InvalidArgumentException $e) {
-			return new DataResponse([], Http::STATUS_BAD_REQUEST);
-		}
-
-		$query = $connection->getQueryBuilder();
-		$query->automaticTablePrefix(false);
-		$query->select('*')
-			->from('DEVICE')
-			->where($query->expr()->eq('_id', $query->createNamedParameter($deviceId)));
-
-		$result = $query->execute();
-		$device = $result->fetch();
-		$result->closeCursor();
-
-		$end = \DateTime::createFromFormat(
-			'Y.n.j G:i:s',
-			$year . '.' . $month . '.' . $day . ' ' .
-				$hours . ':' . (($minutes < 10) ? '0': '') . $minutes . ':00');
-		$start = clone $end;
-		$start->sub(new \DateInterval('P1D'));
-
-		$b = $start->getTimestamp();
-		$a = $end->getTimestamp();
-
-		if ($device['TYPE'] === '14') {
-			return $this->getMiBandData($connection, $device, $start, $end);
-		}
-
-		return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
-	}
-	/**
-	 * @NoAdminRequired
-	 * @NoCSRFRequired
-	 *
 	 * @param int $databaseId
 	 * @param int $deviceId
 	 * @param int $year
@@ -214,7 +165,7 @@ class ApiController extends OCSController {
 	 * 
 	 * @return DataResponse
 	 */
-	public function getNewDeviceData($databaseId, $deviceId, $startTimestamp, $endTimestamp) {
+	public function getDeviceData($databaseId, $deviceId, $startTimestamp, $endTimestamp) {
 		try {
 			$connection = $this->getConnection($databaseId);
 		} catch (NotFoundException $e) {
