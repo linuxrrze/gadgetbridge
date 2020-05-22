@@ -94,19 +94,18 @@ class ApiController extends OCSController {
 		$storage = $dataToImport->getStorage();
 		$tmpPath = $storage->getLocalFile($dataToImport->getInternalPath());
 
-		$factory = new \OC\DB\ConnectionFactory(\OC::$server->getSystemConfig());
-		try {
-			$connection = $factory->getConnection('sqlite3', [
-				'user' => '',
-				'password' => '',
-				'path' => $tmpPath,
-				'sqlite.journal_mode' => 'WAL',
-				'tablePrefix' => '',
-			]);
-		} catch (DBALException $e) {
-			throw new \InvalidArgumentException('Unprocessable entity', Http::STATUS_UNPROCESSABLE_ENTITY);
+		// Doctrine doesn't throw an error if the db is invalid.
+		// A lower level check: let's see if the first 16 bytes say "SQLite Format"
+		// Taken from https://stackoverflow.com/questions/22275154/check-if-a-file-is-a-valid-sqlite-database
+		$handle = fopen($tmpPath, "r");
+		$contents = fread($handle, 15);
+		fclose($handle);
+		if($contents != "SQLite format 3") {
+			// throw new \InvalidArgumentException('Unprocessable entity', Http::STATUS_UNPROCESSABLE_ENTITY);
 			return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
+
+		$connection = $this->getDatabaseConnection($tmpPath);
 
 		$connection->close();
 
@@ -372,6 +371,27 @@ class ApiController extends OCSController {
 	}
 
 	/**
+	 * @param string $path
+	 * @return IDBConnection
+	 * @throws \InvalidArgumentException
+	 */
+	private function getDatabaseConnection($path) {
+		$factory = new \OC\DB\ConnectionFactory(\OC::$server->getSystemConfig());
+
+		try {
+			return $factory->getConnection('sqlite3', [
+				'user' => '',
+				'password' => '',
+				'path' => $path,
+				'sqlite.journal_mode' => 'WAL',
+				'tablePrefix' => '',
+			]);
+		} catch (DBALException $e) {
+			throw new \InvalidArgumentException('Unprocessable Entity', Http::STATUS_UNPROCESSABLE_ENTITY);
+		}
+	}
+
+	/**
 	 * @param int $database
 	 * @return IDBConnection
 	 * @throws NotFoundException
@@ -391,19 +411,6 @@ class ApiController extends OCSController {
 		$storage = $databaseFile->getStorage();
 		$tmpPath = $storage->getLocalFile($databaseFile->getInternalPath());
 
-		$factory = new ConnectionFactory(\OC::$server->getSystemConfig());
-		try {
-			$connection = $factory->getConnection('sqlite3', [
-				'user' => '',
-				'password' => '',
-				'path' => $tmpPath,
-				'sqlite.journal_mode' => 'WAL',
-				'tablePrefix' => '',
-			]);
-		} catch (DBALException $e) {
-			throw new \InvalidArgumentException('Unprocessable entity', Http::STATUS_UNPROCESSABLE_ENTITY);
-		}
-
-		return $connection;
+		return $this->getDatabaseConnection($tmpPath);
 	}
 }

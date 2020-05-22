@@ -15,7 +15,7 @@
 	<bugs>https://github.com/dmeltzer/gadgetbridge/issues</bugs>
 	<repository type="git">https://github.com/dmeltzer/gadgetbridge.git</repository>
 
-	<version>0.6.5</version>
+	<version>0.5.5</version>
 	<namespace>GadgetBridge</namespace>
 
 	<dependencies>

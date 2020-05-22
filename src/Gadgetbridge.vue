@@ -42,7 +42,7 @@ import AppNavigation from '@nextcloud/vue/dist/Components/AppNavigation'
 import AppNavigationItem from '@nextcloud/vue/dist/Components/AppNavigationItem'
 import AppNavigationNew from '@nextcloud/vue/dist/Components/AppNavigationNew'
 
-import { getFilePickerBuilder } from '@nextcloud/dialogs'
+import { showError, getFilePickerBuilder } from '@nextcloud/dialogs'
 import '@nextcloud/dialogs/styles/toast.scss'
 
 import axios from 'axios'
@@ -50,7 +50,7 @@ axios.defaults.headers.post['Accept'] = 'application/json';
 import BarChart from './BarChart.js'
 
 // Datetime picker
-import {Datetime } from 'vue-datetime';
+import { Datetime } from 'vue-datetime';
 import 'vue-datetime/dist/vue-datetime.css'
 
 import moment from 'moment';
@@ -83,7 +83,9 @@ export default {
 				lastHeartRate: null,
 				stepsPerDay: {}
 			},
-			beginRangeTime: {},
+			beginRangeTime: {
+				default: moment().subtract(1,'w').toISOString()
+			},
 			startTime: "",
 			endTime: "",
 			displayCharts: {
@@ -97,14 +99,6 @@ export default {
 					},
 					scales: {
 						xAxes: [{
-							// type: 'time',
-							// unit: 'millisecond',
-							// distribution: 'series',
-							// time: {
-							// 	displayFormats: {
-							// 		month: 'MMMM Do YYYY hh:mm a'
-							// 	},
-							// },
 							gridLines: {
 								offsetGridLines: true
 							},
@@ -142,13 +136,10 @@ export default {
 		}
 	},
 	beforeMount() {
-		this.databaseFilePath = $('#gadgetbridgecontent').attr('data-dbpath');
-		this.databaseFileId = $('#gadgetbridgecontent').attr('data-dbfileid');
+		this.databaseFilePath = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbpath');
+		this.databaseFileId = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbfileid');
 		this.endTime = moment().toISOString();
 		this.startTime = moment().subtract(1,'w').toISOString();
-	},
-	mounted() {
-
 	},
 	methods: {
 		generateGraphs() {
@@ -172,33 +163,26 @@ export default {
 						fill: false,
 						spanGaps: true
 					},
-					// {
-					// 	label: 'Steps',
-					// 	data: this.deviceData.steps,
-					// 	barThickness: 100
-					// }
 				]};
 		},
-		displayDeviceTitle(device) {
-			return device.NAME + ' <em>' + device.IDENTIFIER + '</em>' 
-		},
-		filePickDatabase(e) {
+		async filePickDatabase(e) {
 			const picker = getFilePickerBuilder("Test")
 				.setMultiSelect(false)
 				.setModal(true)
 				.build();
-			picker.pick()
-				.then(file => {
-					axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
+			const file = await picker.pick();
+			if (file) {
+				try {
+					const result = await axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
 						path: file
-					}).then((result) => {
-                        this.databaseFileId = result.data.ocs.data.fileId;
-                        this.databaseFilePath = file.substring(1) // Remove leading slash
-                    }).catch(error => { 
-					    OC.Notification. showTemporary(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
-				    });
-                });
-				
+					});
+					if (!result) return
+					this.databaseFileId = result.data.ocs.data.fileId;
+					this.databaseFilePath = file.substring(1) // Remove leading slash
+				} catch(err) {
+					showError(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
+				}
+			}	
         },
         async fetchDatabaseData() {
             const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
@@ -210,6 +194,7 @@ export default {
 			}
         },
         async loadDeviceData() {
+			if(this.selectedDevice === null) return;
 			const response = await axios.get(
 					OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix());
 			let results = response.data.ocs.data;
