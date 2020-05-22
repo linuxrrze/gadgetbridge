@@ -1,38 +1,53 @@
 <template>
-	<Content id="gadgetbridgecontent" :class="{'icon-loading': loading}" class="main-display" app-name="gadgetbridge">
-			<AppNavigation>
-				<AppNavigationNew v-if="!loading"
-					:text="t('gadgetbridge', 'Select Database')"
-					:disabled="false"
-					button-id="new-gadgetbridge-button"
-					button-class="icon-add"
-					@click="filePickDatabase" />
-				<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
-					<AppNavigationItem title="Test" style="display:none"></AppNavigationItem> <!-- This is stupid, but makes the nesting work.  FIXME -->
-					<template v-for="device in devices">
-						<AppNavigationItem 
-							:key="device._id" 
-							:title="device.NAME"
-							v-tooltip="`ID: ${device.IDENTIFIER}`" 
-							@click="selectedDevice = device" 
-							:class="{active: (selectedDevice == device) }" />
-					</template>
-				</AppNavigationItem>
-			</AppNavigation>
-			<AppContent>
-				<div id="empty-content" v-if="!this.selectedDevice">
-					<div class="icon-activity"></div>
-					<h2>No Data found</h2>
-					<p>Please Import data from android app to continue</p>
-				</div>
-				<template v-else>
-					<bar-chart :chart-data="chartData" :options="chartOptions" />
-					<div class="row">
-						<div class="column"><datetime type="datetime" :min-datetime="beginRangeTime" use12-hour v-model="startTime" /></div>
-						<div class="column"><datetime type="datetime" :min-datetime="endRangeTime" use12-hour v-model="endTime" /></div>
-					</div>
+	<Content id="gadgetbridgecontent"
+		:class="{'icon-loading': loading}"
+		class="main-display"
+		app-name="gadgetbridge">
+		<AppNavigation>
+			<AppNavigationNew v-if="!loading"
+				:text="t('gadgetbridge', 'Select Database')"
+				:disabled="false"
+				button-id="new-gadgetbridge-button"
+				button-class="icon-add"
+				@click="filePickDatabase" />
+			<AppNavigationItem v-if="databaseFilePath" :title="databaseFilePath" icon="icon-folder">
+				<AppNavigationItem title="Test" style="display:none" /> <!-- This is stupid, but makes the nesting work.  FIXME -->
+				<template v-for="device in devices">
+					<AppNavigationItem
+						:key="device._id"
+						v-tooltip="`ID: ${device.IDENTIFIER}`"
+						:title="device.NAME"
+						:class="{active: (selectedDevice == device) }"
+						@click="selectedDevice = device" />
 				</template>
-			</AppContent>
+			</AppNavigationItem>
+		</AppNavigation>
+		<AppContent>
+			<div v-if="!selectedDevice" id="empty-content">
+				<div class="icon-activity" />
+				<h2>No Data found</h2>
+				<p>Please Import data from android app to continue</p>
+			</div>
+			<template v-else>
+				<BarChart :chart-data="chartData" :options="chartOptions" />
+				<div class="row">
+					<div class="column">
+						<DateTime
+							v-model="startTime"
+							type="datetime"
+							:min-datetime="beginRangeTime"
+							use12-hour />
+					</div>
+					<div class="column">
+						<DateTime
+							v-model="endTime"
+							type="datetime"
+							:min-datetime="endRangeTime"
+							use12-hour />
+					</div>
+				</div>
+			</template>
+		</AppContent>
 	</Content>
 </template>
 <script>
@@ -44,16 +59,16 @@ import AppNavigationNew from '@nextcloud/vue/dist/Components/AppNavigationNew'
 
 import { showError, getFilePickerBuilder } from '@nextcloud/dialogs'
 import '@nextcloud/dialogs/styles/toast.scss'
-
+import { generateOcsUrl } from '@nextcloud/router'
 import axios from 'axios'
-axios.defaults.headers.post['Accept'] = 'application/json';
 import BarChart from './BarChart.js'
 
 // Datetime picker
-import { Datetime } from 'vue-datetime';
+import { Datetime } from 'vue-datetime'
 import 'vue-datetime/dist/vue-datetime.css'
+import moment from 'moment'
 
-import moment from 'moment';
+axios.defaults.headers.post['Accept'] = 'application/json'
 
 export default {
 	name: 'Gadgetbridge',
@@ -64,13 +79,13 @@ export default {
 		AppNavigationItem,
 		AppNavigationNew,
 		BarChart,
-		Datetime
+		DateTime: Datetime,
 	},
 	data() {
 		return {
-            databaseFileId: null,
-            databaseFilePath: this.dbPath,
-            devices: [],
+			databaseFileId: null,
+			databaseFilePath: this.dbPath,
+			devices: [],
 			loading: false,
 			selectedDevice: null,
 			show: true,
@@ -81,65 +96,70 @@ export default {
 				activityColors: [],
 				heartRates: [],
 				lastHeartRate: null,
-				stepsPerDay: {}
+				stepsPerDay: {},
 			},
 			beginRangeTime: {
-				default: moment().subtract(1,'w').toISOString()
+				default: moment().subtract(1, 'w').toISOString(),
 			},
-			startTime: "",
-			endTime: "",
+			startTime: '',
+			endTime: '',
 			displayCharts: {
 				heartRate: true,
 				activity: true,
 			},
 			chartData: {},
 			chartOptions: {
-					legend: {
-						display: true,
+				legend: {
+					display: true,
+				},
+				scales: {
+					xAxes: [{
+						gridLines: {
+							offsetGridLines: true,
+						},
+						stacked: true,
+						ticks: {
+							autoSkip: true,
+							maxTicksLimit: 20,
+						},
+					}],
+					yAxes: [{
+						stacked: true,
+					}],
+				},
+				elements: {
+					line: {
+						tension: 0,
 					},
-					scales: {
-						xAxes: [{
-							gridLines: {
-								offsetGridLines: true
-							},
-							stacked: true,
-							ticks: {
-								autoSkip: true,
-								maxTicksLimit: 20
-							}
-						}],
-						yAxes: [{
-							stacked: true
-						}]
-					},
-					elements: {
-						line: {
-							tension: 0
-						}
-					},
-					maintainAspectRatio: false
-				}
+				},
+				maintainAspectRatio: false,
+			},
 		}
+	},
+	computed: {
+		endRangeTime() {
+			return moment(this.startTime).add(1, 'h').toISOString()
+		},
 	},
 	watch: {
 		databaseFileId: function() {
-			this.fetchDatabaseData();
+			this.fetchDatabaseData()
 		},
 		selectedDevice: function() {
-			this.loadDeviceData();
+			this.loadDeviceData()
 		},
 		startTime: function() {
-			this.loadDeviceData();
+			this.loadDeviceData()
 		},
 		endTime: function() {
-			this.loadDeviceData();
-		}
+			this.loadDeviceData()
+		},
 	},
 	beforeMount() {
-		this.databaseFilePath = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbpath');
-		this.databaseFileId = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbfileid');
-		this.endTime = moment().toISOString();
-		this.startTime = moment().subtract(1,'w').toISOString();
+		this.databaseFilePath = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbpath')
+		this.databaseFileId = document.querySelector('#gadgetbridgecontent').getAttribute('data-dbfileid')
+		this.endTime = moment().toISOString()
+		this.startTime = moment().subtract(1, 'w').toISOString()
 	},
 	methods: {
 		generateGraphs() {
@@ -150,7 +170,7 @@ export default {
 						label: 'Activity',
 						data: this.deviceData.steps,
 						backgroundColor: this.deviceData.activityColors,
-						barThickness: 100
+						barThickness: 100,
 					},
 					{
 						label: 'Heart rate',
@@ -161,62 +181,55 @@ export default {
 						pointStyle: 'rect',
 						pointRadius: 0,
 						fill: false,
-						spanGaps: true
+						spanGaps: true,
 					},
-				]};
+				] }
 		},
 		async filePickDatabase(e) {
-			const picker = getFilePickerBuilder("Test")
+			const picker = getFilePickerBuilder()
 				.setMultiSelect(false)
 				.setModal(true)
-				.build();
-			const file = await picker.pick();
+				.build()
+			const file = await picker.pick()
 			if (file) {
 				try {
-					const result = await axios.post(OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + 'database', {
-						path: file
-					});
+					const result = await axios.post(generateOcsUrl('apps/gadgetbridge/api/v1', 2) + 'database', {
+						path: file,
+					})
 					if (!result) return
-					this.databaseFileId = result.data.ocs.data.fileId;
+					this.databaseFileId = result.data.ocs.data.fileId
 					this.databaseFilePath = file.substring(1) // Remove leading slash
-				} catch(err) {
-					showError(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'));
+				} catch (err) {
+					showError(t('gadgetbridge', 'The selected file is not a readable Gadgetbridge database'))
 				}
-			}	
-        },
-        async fetchDatabaseData() {
-            const response = await axios.get( OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices');
-            let results = response.data.ocs.data;
-
-			this.devices = results;
-			if (this.devices.length == 1) {
-				this.selectedDevice = this.devices[0];
 			}
-        },
-        async loadDeviceData() {
-			if(this.selectedDevice === null) return;
-			const response = await axios.get(
-					OC.linkToOCS('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix());
-			let results = response.data.ocs.data;
-			//TODO this might make more sense to do on php side in the future.
-			let stepsPerDay = {};
-			this.deviceData.labels = results.TIMESTAMPS.map((item) => {
-				return moment(item).calendar();
-			});
-			this.deviceData.kinds = results.KINDS;
-			this.deviceData.activityColors = results.ACTIVITY_COLORS;
-			this.deviceData.heartRates = results.HEART_RATES;
-			this.deviceData.steps = results.STEPS;
-			this.beginRangeTime = moment(this.selectedDevice.STARTTIMESTAMP.TIMESTAMP * 1000).toISOString();
-			this.generateGraphs();
 		},
-		
+		async fetchDatabaseData() {
+			const response = await axios.get(generateOcsUrl('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices')
+			const results = response.data.ocs.data
+
+			this.devices = results
+			if (this.devices.length === 1) {
+				this.selectedDevice = this.devices[0]
+			}
+		},
+		async loadDeviceData() {
+			if (this.selectedDevice === null) return
+			const response = await axios.get(
+				generateOcsUrl('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix())
+			const results = response.data.ocs.data
+			this.deviceData.labels = results.TIMESTAMPS.map((item) => {
+				return moment(item).calendar()
+			})
+			this.deviceData.kinds = results.KINDS
+			this.deviceData.activityColors = results.ACTIVITY_COLORS
+			this.deviceData.heartRates = results.HEART_RATES
+			this.deviceData.steps = results.STEPS
+			this.beginRangeTime = moment(this.selectedDevice.STARTTIMESTAMP.TIMESTAMP * 1000).toISOString()
+			this.generateGraphs()
+		},
+
 	},
-	computed: {
-		endRangeTime() {
-			return moment(this.startTime).add(1,'h').toISOString();
-		}
-	}
 }
 </script>
 
@@ -226,14 +239,17 @@ export default {
 	height: 100%;
 	position: relative;
 }
+
 .row {
 	display: flex;
 	justify-content: space-between;
 }
+
 .column {
 	display: flex;
 	flex-direction: column
 }
+
 .vdatetime-input {
 	width: auto;
 }
