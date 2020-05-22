@@ -100,7 +100,7 @@ class ApiController extends OCSController {
 		$handle = fopen($tmpPath, "r");
 		$contents = fread($handle, 15);
 		fclose($handle);
-		if($contents != "SQLite format 3") {
+		if($contents !== "SQLite format 3") {
 			// throw new \InvalidArgumentException('Unprocessable entity', Http::STATUS_UNPROCESSABLE_ENTITY);
 			return new DataResponse([], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
@@ -139,7 +139,7 @@ class ApiController extends OCSController {
 		$devices = $result->fetchAll();
 		foreach ($devices as &$device) {
 			// This covers the MI bands that I know about. TODO expand to cover other devices possibly
-			if ($device['TYPE'] == 14 || $device['TYPE'] == 11) {
+			if (intval($device['TYPE']) === 14 || intval($device['TYPE']) === 11) {
 				$newQuery = $connection->getQueryBuilder();
 				$newQuery->select('TIMESTAMP')
 					->from('MI_BAND_ACTIVITY_SAMPLE')
@@ -224,7 +224,7 @@ class ApiController extends OCSController {
 		// A quick and dirty way of doing this: divide all samples by number of days requested.
 		$data = array_values(array_filter($data, function($k) use ($range) {
 			if ($range->days > 1) {
-				return $k % $range->days == 0;
+				return $k % $range->days === 0;
 			}
 			return true;
 		}, ARRAY_FILTER_USE_KEY));

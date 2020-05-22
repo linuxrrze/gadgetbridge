@@ -4,8 +4,9 @@
 	<name>Gadget bridge</name>
 	<summary>Nextcloud app to visualize the data of your gadgetbridge data </summary>
 	<description><![CDATA[Nextcloud app to visualize the data of your gadgetbridge data ]]></description>
+	<version>0.6.0</version>
 
-	<licence>AGPL</licence>
+	<licence>agpl</licence>
 	<author>Joas Schilling</author>
 	<author>Dan Meltzer</author>
 
@@ -14,14 +15,11 @@
 	<website>https://github.com/dmeltzer/gadgetbridge</website>
 	<bugs>https://github.com/dmeltzer/gadgetbridge/issues</bugs>
 	<repository type="git">https://github.com/dmeltzer/gadgetbridge.git</repository>
-
-	<version>0.5.5</version>
-	<namespace>GadgetBridge</namespace>
-
 	<dependencies>
-		<nextcloud min-version="18" max-version="20" />
+		<nextcloud min-version="20" max-version="20" />
 	</dependencies>
-
+	
+	<namespace>GadgetBridge</namespace>
 	<navigations>
 		<navigation>
 			<name>Gadgetbridge</name>
