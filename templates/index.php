@@ -1,8 +1,11 @@
 <?php
+
 /**
  * @copyright Copyright (c) 2017 Joas Schilling <coding@schilljs.com>
+ * @copyright Copyright (c) 2020 Dan Meltzer <dmeltzer.devel@gmail.com>
  *
  * @author Joas Schilling <coding@schilljs.com>
+ * @author Dan Meltzer <dmeltzer.devel@gmail.com>
  *
  * @license GNU AGPL version 3 or any later version
  *

@@ -29,7 +29,7 @@
 				<p>Please Import data from android app to continue</p>
 			</div>
 			<template v-else>
-				<BarChart :chart-data="chartData" :options="chartOptions" />
+				<BarChart class="main-wrapper" :chart-data="chartData" :options="chartOptions" />
 				<div class="row">
 					<div class="column">
 						<DateTime
@@ -238,6 +238,10 @@ export default {
 	width: 95%;
 	height: 100%;
 	position: relative;
+}
+
+.main-wrapper {
+	margin-top: 30px;
 }
 
 .row {
