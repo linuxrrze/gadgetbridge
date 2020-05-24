@@ -210,13 +210,13 @@ export default {
 
 			this.devices = results
 			if (this.devices.length === 1) {
-				this.selectedDevice = this.devices[0]
+				this.selectedDevice = this.devices[0].data
 			}
 		},
 		async loadDeviceData() {
 			if (this.selectedDevice === null) return
 			const response = await axios.get(
-				generateOcsUrl('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice._id + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix())
+				generateOcsUrl('apps/gadgetbridge/api/v1', 2) + this.databaseFileId + '/devices/' + this.selectedDevice.deviceId + '/samples/' + moment(this.startTime).unix() + '/' + moment(this.endTime).unix())
 			const results = response.data.ocs.data
 			this.deviceData.labels = results.TIMESTAMPS.map((item) => {
 				return moment(item).calendar()
@@ -225,7 +225,7 @@ export default {
 			this.deviceData.activityColors = results.ACTIVITY_COLORS
 			this.deviceData.heartRates = results.HEART_RATES
 			this.deviceData.steps = results.STEPS
-			this.beginRangeTime = moment(this.selectedDevice.STARTTIMESTAMP.TIMESTAMP * 1000).toISOString()
+			this.beginRangeTime = moment(this.selectedDevice.beginningDateTimestamp.TIMESTAMP * 1000).toISOString()
 			this.generateGraphs()
 		},
 
