@@ -1,6 +1,14 @@
 name: CI
 
-on: [push]
+on: 
+  push:
+    paths:
+    - 'tests/**'
+    - 'lib/**'
+    pull-request:
+    paths:
+    - 'tests/**'
+    - 'lib/**'
 
 jobs:
   build-test:
