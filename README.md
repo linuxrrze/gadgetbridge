@@ -1,4 +1,4 @@
-![CI](https://github.com/dmeltzer/gadgetbridge/workflows/CI/badge.svg)
+[![CI](https://github.com/dmeltzer/gadgetbridge/workflows/CI/badge.svg)](https://github.com/dmeltzer/gadgetbridge/actions)
 # gadgetbridge
 Nextcloud app to visualize the data of your gadgetbridge data
 
