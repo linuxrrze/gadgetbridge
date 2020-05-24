@@ -1,4 +1,8 @@
 {
+    "config": {
+        "vendor-dir": "lib/composer",
+        "optimize-autoloader": true
+    },
     "require-dev": {
         "phpunit/phpunit": "^9.1"
     },

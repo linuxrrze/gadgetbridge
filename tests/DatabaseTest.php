@@ -3,7 +3,6 @@
 namespace OCA\GadgetBridge\Tests;
 
 use OCA\GadgetBridge\Database;
-use PHPUnit\Framework\TestCase;
 use OCA\GadgetBridge\InvalidDatabaseException;
 
 /**

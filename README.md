@@ -1,3 +1,4 @@
+![CI](https://github.com/dmeltzer/gadgetbridge/workflows/CI/badge.svg)
 # gadgetbridge
 Nextcloud app to visualize the data of your gadgetbridge data
 
