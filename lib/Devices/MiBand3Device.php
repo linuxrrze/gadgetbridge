@@ -2,10 +2,10 @@
 
 namespace OCA\GadgetBridge\Devices;
 
-use DateTime;
 use DateInterval;
-use OCA\GadgetBridge\ActivityKind;
+use Carbon\Carbon;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\GadgetBridge\Activity\ActivityKind;
 
 
 class MiBand3Device extends Device
@@ -32,12 +32,10 @@ class MiBand3Device extends Device
         }
     }
 
-    public function getSamples(DateTime $start = null, DateTime $end = null) 
+    public function getSamples(Carbon $start = null, Carbon $end = null) 
     {
-        $beginRange = new DateTime();
-        $beginRange->sub(new DateInterval('P10Y'));
-        $start = $start ?? $beginRange;
-        $end = $end ?? new DateTime();
+        $start = $start ?? Carbon::now()->subYears(10);
+        $end = $end ?? Carbon::now();
 
         $query = $this->database->getDatabaseConnection()->getQueryBuilder();
         $query->automaticTablePrefix(false);
@@ -64,22 +62,13 @@ class MiBand3Device extends Device
             return true;
         }, ARRAY_FILTER_USE_KEY));
 
+        // TODO: Port
         $samples = array_map([$this, 'postProcessing'], $samples);
+        return $samples;
 
-        $steps = array_column($samples, 'STEPS');
-        $timestamps = array_column($samples, 'TIMESTAMP');
-        $kinds = array_column($samples, 'RAW_KIND');
-        $activityColors = array_column($samples, 'ACTIVITY_COLOR');
-        $heartRates = array_column($samples, 'HEART_RATE');
-        $this->parsedData = [
-            'STEPS' => $steps,
-            'TIMESTAMPS' => $timestamps,
-            'KINDS' => $kinds,
-            'ACTIVITY_COLORS' => $activityColors,
-            'HEART_RATES' => $heartRates
-        ];
-        return $this->parsedData;
     }
+
+
     protected $lastValidKind = self::TYPE_UNSET;
     protected $lastValidHeartRate;
 
@@ -122,7 +111,8 @@ class MiBand3Device extends Device
         } else {
             $data['HEART_RATE'] = null;
         }
-        $data['RAW_KIND'] *= 10;
+        $data["STEPS"] = intval($data["STEPS"]);
+        // $data['RAW_KIND'] *= 10;
         if ($data['RAW_KIND'] < 1) { // Unknown or unmeasured
             $data['STEPS'] = 2;
         } else { // Bound steps between 10 and 250.  Not sure why, old code.

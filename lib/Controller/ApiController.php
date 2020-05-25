@@ -26,6 +26,7 @@ namespace OCA\GadgetBridge\Controller;
 
 use OCP\IConfig;
 use OCP\IRequest;
+use Carbon\Carbon;
 use OCP\Files\File;
 use OCP\IUserSession;
 use OCP\IDBConnection;
@@ -109,7 +110,6 @@ class ApiController extends OCSController {
 		$database = $this->getDatabase($databaseId);
 
 		$devices = $database->getDevices();
-
 		return new DataResponse($devices);
 	}
 
@@ -129,10 +129,13 @@ class ApiController extends OCSController {
 		$database = $this->getDatabase($databaseId);
 		$device = $database->getDeviceById($deviceId);
 
-		$start = \DateTime::createFromFormat('U', $startTimestamp);
-		$end = \DateTime::createFromFormat('U', $endTimestamp);
+		$start = Carbon::createFromTimestamp($startTimestamp);
+		$end = Carbon::createFromTimestamp($endTimestamp);
 
-		return new DataResponse($device->getSamples($start, $end));
+		// $results = $device->calculateActivityAmounts($device->getSamples($start, $end));
+		// var_dump(json_encode($results->getAmounts()[0]->totalSteps()));
+		// return new DataResponse($results->getAmounts());
+		return new DataResponse($device->formatSamplesForChartJs($device->getSamples($start, $end)));
 	}
 
 	/**
@@ -155,7 +158,7 @@ class ApiController extends OCSController {
 			/** @var File $databaseFile */
 			$storage = $databaseFile->getStorage();
 			$tmpPath = $storage->getLocalFile($databaseFile->getInternalPath());
-			$database = new Database($tmpPath);
+			$createdDatabase = new Database($tmpPath);
 		} catch (NotFoundException $e) {
 			return new DataResponse([], Http::STATUS_NOT_FOUND);
 		} catch (\InvalidArgumentException $e) {
@@ -165,6 +168,6 @@ class ApiController extends OCSController {
 		}
 
 		
-		return $database;
+		return $createdDatabase;
 	}
 }

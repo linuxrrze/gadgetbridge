@@ -7,5 +7,6 @@
         "phpunit/phpunit": "^9.1"
     },
     "require": {
+        "nesbot/carbon": "^2.34"
     }
 }

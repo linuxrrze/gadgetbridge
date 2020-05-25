@@ -19,5 +19,9 @@
  *
  */
 
+if ((@include_once __DIR__ . '/../lib/composer/autoload.php') === false) {
+    throw new Exception('Cannot include autoload. Did you run install dependencies using composer?');
+}
+
 $app = new \OCA\GadgetBridge\AppInfo\Application();
 $app->register();
